@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { connect } from "react-redux";
 import { Play, Stop } from "./components/Icons";
+import MinuteControl from "./components/MinuteControl";
+import Timer from "./components/Timer";
 import * as actionCreator from "./store/actions";
 import audio from "./assets/beep.mp3";
 
@@ -12,6 +14,7 @@ function App({
   decrement_seconds,
   interval_id,
   reset,
+  interval_reset,
 }) {
   useEffect(() => {
     beep();
@@ -25,7 +28,11 @@ function App({
   };
   const handleStart = () => {
     if (!state.start) {
-      startTimer("session");
+      if (state.currentSession === "session") {
+        startTimer("session");
+      } else {
+        startTimer("break");
+      }
     } else {
       clearInterval(state.intervalId);
     }
@@ -41,14 +48,22 @@ function App({
 
   const beep = () => {
     const sound = new Audio(audio);
-    if (state.session === 0 && state.intervalId !== null) {
+    if (state.session === 0 || state.break === 0) {
       clearInterval(state.intervalId);
-      reset();
+      if (state.session === 0) {
+        interval_reset("session");
+        startTimer("break");
+      }
+      if (state.break === 0) {
+        interval_reset("break");
+        startTimer("session");
+      }
       sound.play();
     }
   };
 
   const handleReset = () => {
+    clearInterval(state.intervalId);
     reset();
   };
 
@@ -59,36 +74,21 @@ function App({
         style={{ background: "linear-gradient(#325d70, #e66465)" }}
       >
         <h1 className="text-4xl font-bold">POMODORO</h1>
-        <div className="flex flex-col items-center my-5">
-          <div>Session Length</div>
-          <div>
-            <button
-              className="bg-primary px-4 py-2 rounded-full focus:outline-none active:bg-pink-200"
-              onClick={() => handleDecrement("session")}
-            >
-              -
-            </button>
-            <input
-              className="w-10 text-black m-2 rounded px-2 outline-none"
-              value={Math.floor(state.session / 60)}
-              type="text"
-              readOnly
-              // onChange={(e) => console.log(e.target.value)}
-            />
-            <button
-              className="bg-primary px-4 py-2 rounded-full focus:outline-none active:bg-pink-200"
-              onClick={() => handleIncrement("session")}
-            >
-              +
-            </button>
-          </div>
+        <div className="flex flex-col lg:flex-row">
+          <MinuteControl
+            name="Session Length"
+            handleDecrement={() => handleDecrement("session")}
+            handleIncrement={() => handleIncrement("session")}
+            seconds={state.userSetSession}
+          />
+          <MinuteControl
+            name="Break Length"
+            handleDecrement={() => handleDecrement("break")}
+            handleIncrement={() => handleIncrement("break")}
+            seconds={state.userSetBreak}
+          />
         </div>
-        <div className="text-6xl rounded-full border-2 border-solid px-8 py-6">
-          {Math.floor(state.session / 60)} :{" "}
-          {Math.ceil(state.session % 60) === 0
-            ? "00"
-            : Math.ceil(state.session % 60)}
-        </div>
+        <Timer state={state} />
         <div className="my-8 flex items-center">
           <button
             onClick={() => handleStart()}
@@ -120,6 +120,8 @@ let mapDispatchToProps = (dispatch) => {
       dispatch(actionCreator.decrement_seconds(timerType)),
     interval_id: (id) => dispatch(actionCreator.interval_id(id)),
     reset: () => dispatch(actionCreator.reset()),
+    interval_reset: (timerType) =>
+      dispatch(actionCreator.interval_reset(timerType)),
   };
 };
 

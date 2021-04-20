@@ -28,3 +28,8 @@ export const interval_id = (id) => ({
 export const reset = () => ({
   type: action.RESET,
 });
+
+export const interval_reset = (timerType) => ({
+  type: action.INTERVAL_RESET,
+  timerType,
+});
